@@ -67,12 +67,12 @@ jobs:
         GLFW_DEPS: ${{ runner.os == 'Windows' && format('{0}/glfw/deps', github.workspace) || '' }}
       run: |
         GLFW_DEPS="${GLFW_DEPS//\\//}"
-        cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+        cmake -B "${{ steps.strings.outputs.build-output-dir }}" \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCMAKE_PREFIX_PATH="$GLFW_DEPS" \
-          -S ${{ github.workspace }}
+          -S "${{ github.workspace }}"
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
