@@ -1,0 +1,30 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  performance-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-convert-member-functions-to-static,
+  clang-analyzer-*
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '(include|src)/.*'
+
+CheckOptions:
+  - key:   readability-braces-around-statements.ShortStatementLines
+    value: 2
+  - key:   readability-implicit-bool-conversion.AllowPointerConditions
+    value: true
+  - key:   modernize-use-nullptr.NullMacros
+    value: 'NULL'
+  - key:   performance-unnecessary-value-param.AllowedTypes
+    value: 'std::string'

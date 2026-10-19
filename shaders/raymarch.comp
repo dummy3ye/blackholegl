@@ -1,0 +1,271 @@
+#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(rgba32f, binding = 0) uniform image2D imgOutput;
+
+uniform vec2 resolution;
+uniform vec3 camPos;
+uniform vec3 camForward;
+uniform vec3 camRight;
+uniform vec3 camUp;
+uniform float fov;
+uniform float time;
+uniform int quality; // 0 = Very Low (Ultra Fast), 1 = Low, 2 = Medium, 3 = High
+
+const float M = 1.0;
+const float r_s = 2.0 * M;
+const float r_isco = 3.0 * M;
+const float r_disk_in = 2.6 * M;
+const float r_disk_out = 14.0 * M;
+const float disk_half_thickness = 0.09 * M;
+
+// Geodesic acceleration for light in Schwarzschild metric using spatial orbital angular momentum
+// d^2 x / d lambda^2 = - 1.5 * r_s * L^2 / r^5 * x
+vec3 getAcceleration(vec3 pos, vec3 vel) {
+    float r2 = dot(pos, pos);
+    float r = sqrt(r2);
+    if (r <= r_s * 1.0001) return vec3(0.0);
+
+    vec3 L = cross(pos, vel);
+    float L2 = dot(L, L);
+    float r5 = r2 * r2 * r;
+
+    return - 1.5 * r_s * L2 * pos / r5;
+}
+
+// Procedural cosmos sky
+vec3 getSkyColor(vec3 dir) {
+    if (quality == 0) {
+        // Very low: simple ambient + fast stars
+        vec3 p = floor(dir * 180.0);
+        float n = fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+        float star = step(0.988, n) * 1.6;
+        return vec3(0.001, 0.001, 0.002) + vec3(star);
+    }
+
+    vec3 col = vec3(0.0015, 0.0015, 0.0035);
+    float milkyWay = pow(max(0.0, 1.0 - abs(dir.y * 1.6)), 4.0);
+    col += vec3(0.015, 0.018, 0.035) * milkyWay;
+
+    vec3 p = dir * 350.0;
+    vec3 ip = floor(p);
+    float n = fract(sin(dot(ip, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    if (n > 0.993) {
+        float intensity = pow((n - 0.993) / 0.007, 4.0) * 2.8;
+        vec3 starTint = mix(vec3(0.85, 0.95, 1.0), vec3(1.0, 0.8, 0.6), fract(n * 23.1));
+        col += starTint * intensity;
+    }
+
+    if (quality >= 2) {
+        vec3 p2 = dir * 700.0;
+        vec3 ip2 = floor(p2);
+        float n2 = fract(sin(dot(ip2, vec3(269.5, 183.3, 419.2))) * 18453.2845);
+        if (n2 > 0.996) {
+            col += vec3(0.7, 0.85, 1.0) * 0.9;
+        }
+    }
+
+    return col;
+}
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p, int octaves) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < octaves; ++i) {
+        v += a * noise(p);
+        p *= 2.15;
+        a *= 0.48;
+    }
+    return v;
+}
+
+// Volumetric sample of the accretion disk
+vec4 sampleDiskVolume(vec3 pos, vec3 rayDir, float stepLen) {
+    float r = length(pos.xz);
+    if (r < r_disk_in || r > r_disk_out) {
+        return vec4(0.0);
+    }
+
+    float hMax = disk_half_thickness * (1.0 + 0.12 * (r - r_disk_in));
+    if (abs(pos.y) > hMax * 2.2) {
+        return vec4(0.0);
+    }
+
+    float yDist = abs(pos.y) / hMax;
+    float verticalFalloff = exp(-2.5 * yDist * yDist);
+
+    // Orbital dynamics & Relativistic Doppler
+    float v_orbit = sqrt(M / r);
+    vec3 v_dir = normalize(vec3(-pos.z, 0.0, pos.x));
+    vec3 betaVec = v_dir * clamp(v_orbit, 0.0, 0.72);
+    float beta2 = dot(betaVec, betaVec);
+    float gamma = 1.0 / sqrt(max(0.001, 1.0 - beta2));
+
+    float cosTheta = dot(normalize(betaVec), -rayDir);
+    float doppler = 1.0 / (gamma * (1.0 - sqrt(beta2) * cosTheta));
+    float gRedshift = sqrt(max(0.001, 1.0 - r_s / r));
+    float totalShift = clamp(doppler * gRedshift, 0.15, 3.2);
+
+    float phi = atan(pos.z, pos.x);
+    float swirl = phi + time * (1.2 / sqrt(r)) + (2.5 / (r * 0.35));
+    float ringPattern = sin(r * 18.0 + swirl * 2.0) * 0.25 + 0.75;
+
+    float turbulence = 0.5;
+    if (quality == 0) {
+        turbulence = noise(vec2(r * 2.0, swirl * 2.5));
+    } else if (quality == 1) {
+        turbulence = fbm(vec2(r * 2.2, swirl * 3.5), 2);
+    } else {
+        turbulence = fbm(vec2(r * 2.2, swirl * 3.5), 4);
+    }
+
+    float densityField = ringPattern * (0.4 + 0.9 * turbulence);
+
+    float rNorm = (r - r_disk_in) / (r_disk_out - r_disk_in);
+    float radialFalloff = smoothstep(0.0, 0.12, rNorm) * pow(1.0 - rNorm, 1.4);
+    float iscoGlow = exp(-8.0 * abs(r - r_isco)) * 2.2;
+
+    float baseDensity = (densityField * radialFalloff + iscoGlow * 0.4) * verticalFalloff;
+    if (baseDensity < 0.001) return vec4(0.0);
+
+    float beamedIntensity = baseDensity * pow(totalShift, 3.8);
+
+    vec3 baseCol;
+    if (totalShift > 1.25) {
+        baseCol = mix(vec3(1.2, 1.05, 0.9), vec3(1.4, 1.35, 1.5), clamp((totalShift - 1.25) * 1.5, 0.0, 1.0));
+    } else if (totalShift > 0.85) {
+        float t = (totalShift - 0.85) / 0.40;
+        baseCol = mix(vec3(1.3, 0.7, 0.25), vec3(1.4, 1.15, 0.95), t);
+    } else {
+        baseCol = mix(vec3(0.55, 0.12, 0.02), vec3(1.2, 0.6, 0.18), clamp(totalShift / 0.85, 0.0, 1.0));
+    }
+
+    vec3 emitColor = baseCol * beamedIntensity * 4.2;
+    float opacity = clamp(baseDensity * 5.5 * stepLen, 0.0, 0.92);
+
+    return vec4(emitColor, opacity);
+}
+
+void main() {
+    ivec2 texCoord = ivec2(gl_GlobalInvocationID.xy);
+    if (texCoord.x >= int(resolution.x) || texCoord.y >= int(resolution.y)) return;
+
+    vec2 uv = (vec2(texCoord) - 0.5 * resolution) / resolution.y;
+
+    float tanHalfFov = tan(fov * 0.5);
+    vec3 rayDir = normalize(camForward + camRight * (uv.x * tanHalfFov * 2.0) + camUp * (uv.y * tanHalfFov * 2.0));
+    vec3 rayPos = camPos;
+
+    vec3 accumulatedColor = vec3(0.0);
+    float transmittance = 1.0;
+
+    // Quality-adaptive parameters
+    int maxSteps = 400;
+    float stepScale = 0.038;
+    float minH = 0.012;
+    float maxH = 0.38;
+    float diskH = 0.04;
+
+    if (quality == 0) {
+        // Very Low quality: minimal steps, larger integration interval
+        maxSteps = 120;
+        stepScale = 0.085;
+        minH = 0.035;
+        maxH = 0.75;
+        diskH = 0.09;
+    } else if (quality == 1) {
+        // Low quality
+        maxSteps = 220;
+        stepScale = 0.055;
+        minH = 0.020;
+        maxH = 0.50;
+        diskH = 0.06;
+    } else if (quality == 2) {
+        // Medium quality
+        maxSteps = 320;
+        stepScale = 0.042;
+        minH = 0.015;
+        maxH = 0.42;
+        diskH = 0.045;
+    }
+
+    for (int step = 0; step < maxSteps; ++step) {
+        float r = length(rayPos);
+
+        if (r <= r_s * 1.002) {
+            transmittance = 0.0;
+            break;
+        }
+
+        if (r > 42.0 * M) {
+            accumulatedColor += transmittance * getSkyColor(rayDir);
+            transmittance = 0.0;
+            break;
+        }
+
+        float h = clamp(stepScale * r, minH, maxH);
+        if (abs(rayPos.y) < disk_half_thickness * 3.0 && r > r_disk_in * 0.8 && r < r_disk_out * 1.1) {
+            h = min(h, diskH);
+        }
+
+        vec4 diskSample = sampleDiskVolume(rayPos, rayDir, h);
+        if (diskSample.a > 0.0001) {
+            accumulatedColor += transmittance * diskSample.rgb;
+            transmittance *= (1.0 - diskSample.a);
+            if (transmittance < 0.02) break;
+        }
+
+        if (quality == 0) {
+            // Very Low: 2nd-order Midpoint/Verlet integrator (2 accel evals instead of 4)
+            vec3 a1 = getAcceleration(rayPos, rayDir);
+            vec3 midPos = rayPos + 0.5 * h * rayDir;
+            vec3 midVel = rayDir + 0.5 * h * a1;
+            vec3 a2 = getAcceleration(midPos, midVel);
+
+            rayPos += h * midVel;
+            rayDir = normalize(rayDir + h * a2);
+        } else {
+            // RK4 Integration
+            vec3 k1_v = getAcceleration(rayPos, rayDir);
+            vec3 k1_x = rayDir;
+
+            vec3 k2_v = getAcceleration(rayPos + 0.5 * h * k1_x, rayDir + 0.5 * h * k1_v);
+            vec3 k2_x = rayDir + 0.5 * h * k1_v;
+
+            vec3 k3_v = getAcceleration(rayPos + 0.5 * h * k2_x, rayDir + 0.5 * h * k2_v);
+            vec3 k3_x = rayDir + 0.5 * h * k2_v;
+
+            vec3 k4_v = getAcceleration(rayPos + h * k3_x, rayDir + h * k3_v);
+            vec3 k4_x = rayDir + h * k3_v;
+
+            rayPos += (h / 6.0) * (k1_x + 2.0 * k2_x + 2.0 * k3_x + k4_x);
+            rayDir = normalize(rayDir + (h / 6.0) * (k1_v + 2.0 * k2_v + 2.0 * k3_v + k4_v));
+        }
+    }
+
+    vec3 x = max(vec3(0.0), accumulatedColor);
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    vec3 mapped = clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    mapped = pow(mapped, vec3(1.0 / 2.2));
+
+    imageStore(imgOutput, texCoord, vec4(mapped, 1.0));
+}

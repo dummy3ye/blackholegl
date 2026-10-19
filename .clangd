@@ -1,0 +1,24 @@
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -Iinclude
+    - -Iexternal/glad/include
+    - -Wall
+    - -Wextra
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - modernize-*
+      - bugprone-*
+      - performance-*
+      - readability-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - readability-magic-numbers
+      - readability-identifier-length
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
