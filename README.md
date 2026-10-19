@@ -17,7 +17,9 @@ I'm still working on it, so yeah<br>
 - cmake ≥ 3.15
 - pkg-config
 
-#### then run
+### installation
+
+#### For Linux and MacOS
 
 ```sh
 git clone https://github.com/dummy3ye/blackholegl
