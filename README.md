@@ -9,6 +9,16 @@ A huge inspiration for this project was Kavan's video about simulating a blackho
 I'm still working on it, so yeah<br>
 ### wanna try it yourself ?
 
+#### requirements
+- clang / clang++
+- make
+- GLFW 3 (glfw3 dev package)
+- OpenGL (libGL)
+- cmake ≥ 3.15
+- pkg-config
+
+#### then run
+
 ```sh
 git clone https://github.com/dummy3ye/blackholegl
 cd blackholegl
