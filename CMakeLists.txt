@@ -23,6 +23,38 @@ find_package(OpenGL REQUIRED)
 # Both paths provide the `glfw` target, so nothing below has to care.
 find_package(glfw3 QUIET)
 if(NOT TARGET glfw)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # GLFW is built from source here, which needs the X11 development
+    # headers. Fail early with something actionable instead of letting
+    # GLFW complain about a missing RandR header.
+    find_path(GLFW_XRANDR_HEADER X11/extensions/Xrandr.h)
+    find_path(GLFW_XINERAMA_HEADER X11/extensions/Xinerama.h)
+    find_path(GLFW_XCURSOR_HEADER X11/Xcursor/Xcursor.h)
+    find_path(GLFW_XINPUT_HEADER X11/extensions/XInput.h)
+    set(GLFW_MISSING_X11 "")
+    if(NOT GLFW_XRANDR_HEADER)
+      list(APPEND GLFW_MISSING_X11 "libxrandr-dev")
+    endif()
+    if(NOT GLFW_XINERAMA_HEADER)
+      list(APPEND GLFW_MISSING_X11 "libxinerama-dev")
+    endif()
+    if(NOT GLFW_XCURSOR_HEADER)
+      list(APPEND GLFW_MISSING_X11 "libxcursor-dev")
+    endif()
+    if(NOT GLFW_XINPUT_HEADER)
+      list(APPEND GLFW_MISSING_X11 "libxi-dev")
+    endif()
+    if(GLFW_MISSING_X11)
+      message(FATAL_ERROR
+        "GLFW was not found and the X11 development headers are missing.\n"
+        "Install the GLFW development package:\n"
+        "  Debian / Ubuntu   sudo apt install libglfw3-dev\n"
+        "  Arch              sudo pacman -S glfw\n"
+        "or the headers GLFW needs:\n"
+        "  Debian / Ubuntu   sudo apt install ${GLFW_MISSING_X11}\n"
+        "  Arch              sudo pacman -S libxrandr libxinerama libxcursor libxi")
+    endif()
+  endif()
   include(FetchContent)
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

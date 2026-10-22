@@ -18,8 +18,6 @@
       "name": "windows-msvc-release",
       "displayName": "Windows / MSVC / Release",
       "inherits": "base",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -28,8 +26,6 @@
       "name": "windows-msvc-debug",
       "displayName": "Windows / MSVC / Debug",
       "inherits": "base",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
