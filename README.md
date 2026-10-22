@@ -1,6 +1,9 @@
 # blackholegl
 
-Blackholegl is a simulation of The Gargantua Blackhole seen in the movie intersteller
+Blackholegl is a simulation of The Gargantua Blackhole seen in the movie intersteller written entirely in C++ and OpenGL
+
+> [!IMPORTANT]
+> This main project is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too complex to maintain multi-platform releases for one person.
 
 ![v3 blackhole](assets/v3.png)
 
@@ -8,7 +11,7 @@ A huge inspiration for this project was Kavan's video about simulating a blackho
 
 I'm still working on it, so yeah<br>
 
-## quick start
+## installation
 
 **Download a prebuilt binary** from the [releases page](https://github.com/dummy3ye/blackholegl/releases):
 
@@ -20,12 +23,13 @@ I'm still working on it, so yeah<br>
 Both archives contain the binary and the `shaders/` folder it needs, no build
 tools and no install step.
 
+> [!WARNING]
+> This project currently is still not able to run on MacOS.
+
 > [!IMPORTANT]
 > A GPU driver with **OpenGL 4.3 Core** is required (compute shaders).
 > Check with `glxinfo \| grep "OpenGL version"` on Linux, or
 > [glview](https://www.gfxbench.com/opengl) on Windows.
-
-**Or build it yourself**, all you need is CMake (>= 3.21) and a C++ compiler:
 
 ```sh
 git clone https://github.com/dummy3ye/blackholegl
@@ -59,8 +63,8 @@ system, so there is no dependency to install by hand.
 ```
 blackholegl [OPTIONS]
 
-  --res=<int>, -r <int>     Render height (default 720, range 120-4320)
-  --quality=<name|int>      very-low (0), low (1), medium (2), high (3)
+  --res=<int>, -r <int>      Render height (default 720, range 120-4320)
+  --quality=<name|int>       very-low (0), low (1), medium (2), high (3)
   --show-fps                 Show real-time FPS / GPU overlay
   --very-low, -vl            Preset: quality=0, res=360p
   --help, -h                 Show this message and exit
@@ -107,8 +111,6 @@ not have to be on `PATH`):
 |--------|--------------|
 | `make` | build the release binary |
 | `make run` | build and run |
-| `make run RES=360` | run with a custom render resolution |
-| `make run SHOW_FPS=1` | run with the FPS overlay |
 | `make debug` | debug build, on Linux with address + UB sanitizers |
 | `make install` | install binary + shaders under `$(PREFIX)` (`/usr/local` on Linux, `dist` on Windows) |
 | `make clean` | remove build artefacts |
@@ -130,7 +132,7 @@ winget install Kitware.CMake
 winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
 
-### wsl2
+### windows on wsl2
 
 Follow the Linux instructions, then note that a common problem in WSL2 is
 getting the OpenGL version right. If anything looks off, run:
@@ -139,28 +141,50 @@ getting the OpenGL version right. If anything looks off, run:
 source scripts/wsl2-mesa-version-fix.sh
 ```
 
-## troubleshooting
+# Troubleshooting
 
-| symptom | fix |
-|---------|-----|
-| `Window creation failed` | the driver is too old, needs OpenGL 4.3 Core. Update the GPU driver, on Intel/AMD Linux use Mesa |
-| `Failed to open shader file` | the `shaders/` folder is missing next to the binary, re-extract the archive |
-| black screen but the window opens | the GPU dropped the compute shader, try `--quality=very-low` or a smaller `--res` |
-| slow on integrated graphics | use `--res=360 --quality=very-low` |
-| `GLFW init failed` | no display available, WSL2 needs WSLg enabled |
+<details>
+<summary><b>1. Why am I getting the error "Window creation failed"?</b></summary>
 
-## project layout
+Your GPU driver is likely out of date. The application requires **OpenGL 4.3 Core** support.
+* **Fix:** Update your graphics drivers. On Intel or AMD Linux, ensure you are using **Mesa** drivers.
+</details>
 
-```
-src/        application code
-include/    headers
-shaders/    GLSL shaders loaded at runtime
-external/   vendored dependencies (glad)
-scripts/    helper scripts
-```
+<details>
+<summary><b>2. What does "Failed to open shader file" mean?</b></summary>
 
-CMake is the single source of truth for the build, the `Makefile` and
-`install.bat` are thin wrappers on top of it.
+The application cannot locate the required shader files on launch.
+* **Fix:** Ensure the `shaders/` directory is located directly next to the executable binary. Re-extract the project archive if necessary.
+</details>
+
+<details>
+<summary><b>3. Why is the window opening to a black screen?</b></summary>
+
+Your GPU may have dropped the compute shader, usually due to high resource demands or hardware limitations.
+* **Fix:** Launch the application with reduced settings:
+  `--quality=very-low` or a smaller resolution like `--res=360`
+</details>
+
+<details>
+<summary><b>4. How can I improve performance on integrated graphics?</b></summary>
+
+Integrated GPUs have limited rendering capacity and require lighter graphics options.
+* **Fix:** Run the application with lower resolution and quality settings using the flags:
+  `--res=360 --quality=very-low`
+</details>
+
+<details>
+<summary><b>5. Why do I see "GLFW init failed" on startup?</b></summary>
+
+The application cannot detect an active graphical display environment.
+* **Fix:** Ensure a display server is available. If you are using **WSL2**, make sure **WSLg** is enabled to support GUI applications.
+</details>
+
+<details>
+<summary><b>I can't have the solution to my problem above.</b></summary>
+
+create a issue at [Issues](https://github.com/dummy3ye/blackholegl/issues)
+</details>
 
 ## license
 
