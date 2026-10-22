@@ -7,6 +7,7 @@ Blackholegl is a simulation of The Gargantua Blackhole seen in the movie interst
 A huge inspiration for this project was Kavan's video about simulating a blackhole in C++, check out his video on [youtube](https://www.youtube.com/watch?v=8-B6ryuBkCM).
 
 I'm still working on it, so yeah<br>
+
 ### wanna try it yourself ?
 
 #### requirements
@@ -60,6 +61,9 @@ The Makefile links `-lGL -ldl -lm`, so it targets Linux — on macOS the linker
 flags need adjusting (GLFW via Homebrew, OpenGL framework instead of `-lGL`).
 
 #### For Windows
+
+>[!IMPORTANT]
+> in wsl2 a common problem is getting the OpenGL version right, if you get into any problem run `source scripts/wsl2-mesa-version-fix.sh`
 
 The Makefile is Linux-only, so on Windows use `install.bat` from an
 **Administrator** terminal. It installs Git, CMake and the VS 2022 Build

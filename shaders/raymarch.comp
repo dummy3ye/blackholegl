@@ -10,7 +10,7 @@ uniform vec3 camRight;
 uniform vec3 camUp;
 uniform float fov;
 uniform float time;
-uniform int quality; // 0 = Very Low (Ultra Fast), 1 = Low, 2 = Medium, 3 = High
+uniform int quality; // 0 = very low, 1 = Low, 2 = Medium, 3 = High
 
 const float M = 1.0;
 const float r_s = 2.0 * M;

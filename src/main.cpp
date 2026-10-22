@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
                         (void *)(2 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
-  // texture
+  // textures
   GLuint tex;
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
