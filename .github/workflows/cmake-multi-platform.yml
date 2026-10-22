@@ -8,12 +8,13 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.os }} / ${{ matrix.cpp_compiler }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
         include:
@@ -26,12 +27,19 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
+            c_compiler: cl
+          - os: macos-latest
+            c_compiler: gcc
+          - os: macos-latest
             c_compiler: cl
 
     steps:
@@ -43,14 +51,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libglfw3-dev libgl1-mesa-dev
 
-    - name: Build GLFW from source (Windows)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        git clone --depth 1 --branch 3.4 https://github.com/glfw/glfw.git glfw
-        cmake -S glfw -B glfw/build -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF
-        cmake --build glfw/build --config Release
-        cmake --install glfw/build --config Release --prefix glfw/deps
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: brew install glfw
 
     - name: Set reusable strings
       id: strings
@@ -60,19 +63,32 @@ jobs:
 
     - name: Configure CMake
       shell: bash
-      env:
-        # find_package(glfw3) needs to know where GLFW lives; on Linux the
-        # system package is found automatically, on Windows it is the
-        # prefix of the GLFW built in the previous step.
-        GLFW_DEPS: ${{ runner.os == 'Windows' && format('{0}/glfw/deps', github.workspace) || '' }}
       run: |
-        GLFW_DEPS="${GLFW_DEPS//\\//}"
+        # find_package(glfw3) needs to know where GLFW lives; on Linux and
+        # macOS the system package is found automatically, on Windows it is
+        # downloaded and built by the FetchContent fallback in CMakeLists.txt
+        PREFIX=""
+        if [ "$RUNNER_OS" = "macOS" ]; then PREFIX="$(brew --prefix)"; fi
         cmake -B "${{ steps.strings.outputs.build-output-dir }}" \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_PREFIX_PATH="$GLFW_DEPS" \
+          -DCMAKE_PREFIX_PATH="$PREFIX" \
           -S "${{ github.workspace }}"
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Install to staging directory
+      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --prefix ${{ github.workspace }}/staging
+
+    - name: Smoke test
+      shell: bash
+      env:
+        EXE: ${{ github.workspace }}/staging/bin/blackholegl
+      run: |
+        # only the cli is exercised here, macOS has no OpenGL 4.3 driver so
+        # the window itself can only be opened on Linux and Windows
+        if [ "$RUNNER_OS" = "Windows" ]; then EXE="$EXE.exe"; fi
+        "$EXE" --version
+        "$EXE" --help

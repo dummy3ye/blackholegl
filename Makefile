@@ -1,76 +1,98 @@
 #   make                     build release binary
-#   make debug               build with debug symbols + address sanitizer
+#   make debug               build with debug symbols + address/UB sanitizers
 #   make run                 build and run
 #   make run RES=360         run with custom resolution
-#   make run SHOW_FPS=1      run with FPS overlay enabled
+#   make run SHOW_FPS=1      run with the FPS overlay enabled
 #   make clean               remove build artefacts
+#   make install             install binary + shaders under $(PREFIX)
+#
+# This is a thin wrapper around the CMake build, CMake is the single source of
+# truth. See CMakePresets.json for the available presets.
+#
+# On Windows the work is done by scripts/build-windows.ps1, which finds CMake
+# and the Visual Studio build tools even when they are not on PATH.
 
-CXX      := clang++
-CC       := clang
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2
-CFLAGS   := -std=c11 -Wall -Wextra -O2
-INCLUDES := -Iinclude -Iexternal/glad/include
-LDFLAGS  := -lglfw -lGL -ldl -lm
+TARGET := blackholegl
 
-TARGET   := blackholegl
-BUILDDIR := build
+ifeq ($(OS),Windows_NT)
+  PRESET               ?= windows-msvc-release
+  DEBUG_PRESET         ?= windows-msvc-debug
+  CONFIGURATION        ?= Release
+  DEBUG_CONFIGURATION  ?= Debug
+  BUILD_DIR := build/$(PRESET)
+  BIN       := $(BUILD_DIR)/$(CONFIGURATION)/$(TARGET).exe
+  PREFIX    ?= dist
+  PS := powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
+else
+  PRESET               ?= linux-release
+  DEBUG_PRESET         ?= linux-debug
+  CONFIGURATION        ?=
+  DEBUG_CONFIGURATION  ?=
+  BUILD_DIR := build/$(PRESET)
+  BIN       := $(BUILD_DIR)/$(TARGET)
+  PREFIX    ?= /usr/local
+  PS :=
+endif
 
-CXX_SRCS := src/main.cpp src/shader.cpp
-C_SRCS   := external/glad/src/gl.c
-
-CXX_OBJS := $(patsubst %.cpp,$(BUILDDIR)/%.o,$(CXX_SRCS))
-C_OBJS   := $(patsubst %.c,$(BUILDDIR)/%.o,$(C_SRCS))
-OBJS     := $(CXX_OBJS) $(C_OBJS)
-
-RES      ?=
+RES     ?=
 SHOW_FPS ?=
+ARGS    :=
+ifneq ($(strip $(RES)),)
+  ARGS += --res=$(RES)
+endif
+ifneq ($(strip $(SHOW_FPS)),)
+  ARGS += --show-fps
+endif
 
-PREFIX ?= /usr/local
-BINDIR := $(PREFIX)/bin
-SHAREDIR := $(PREFIX)/share/blackholegl
+.PHONY: all build debug run clean install uninstall help
 
-.PHONY: all debug run clean install uninstall
+all: build
 
-all: $(BUILDDIR)/$(TARGET)
+build:
+ifeq ($(OS),Windows_NT)
+	$(PS) -Preset $(PRESET) -Configuration $(CONFIGURATION)
+else
+	cmake --preset $(PRESET)
+	cmake --build --preset $(PRESET)
+endif
 
-debug: CXXFLAGS := -std=c++17 -Wall -Wextra -g -O0 -fsanitize=address,undefined
-debug: CFLAGS   := -std=c11 -Wall -Wextra -g -O0 -fsanitize=address,undefined
-debug: LDFLAGS  += -fsanitize=address,undefined
-debug: $(BUILDDIR)/$(TARGET)
+debug:
+ifeq ($(OS),Windows_NT)
+	$(PS) -Preset $(DEBUG_PRESET) -Configuration $(DEBUG_CONFIGURATION)
+else
+	cmake --preset $(DEBUG_PRESET)
+	cmake --build --preset $(DEBUG_PRESET)
+endif
 
-$(BUILDDIR)/$(TARGET): $(OBJS)
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-	@echo "  LINK  $@"
-
-$(BUILDDIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
-	@echo "  CXX   $<"
-
-$(BUILDDIR)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-	@echo "  CC    $<"
-
-run: $(BUILDDIR)/$(TARGET)
-	@ARGS=""; \
-	if [ -n "$(RES)" ];      then ARGS="$$ARGS --res=$(RES)"; fi; \
-	if [ -n "$(SHOW_FPS)" ]; then ARGS="$$ARGS --show-fps";   fi; \
-	echo "Running: ./$(BUILDDIR)/$(TARGET) $$ARGS"; \
-	./$(BUILDDIR)/$(TARGET) $$ARGS
+run: build
+	@echo Running: $(BIN) $(ARGS)
+	$(BIN) $(ARGS)
 
 clean:
-	rm -rf $(BUILDDIR)
+ifeq ($(OS),Windows_NT)
+	if exist build rmdir /s /q build
+	if exist dist rmdir /s /q dist
+else
+	rm -rf build
+endif
 
-install: $(BUILDDIR)/$(TARGET)
-	install -d $(BINDIR)
-	install -m 755 $(BUILDDIR)/$(TARGET) $(BINDIR)/$(TARGET)
-	install -d $(SHAREDIR)
-	cp -r shaders $(SHAREDIR)/
-	@echo "Installed to $(BINDIR) and $(SHAREDIR)"
+install: build
+ifeq ($(OS),Windows_NT)
+	$(PS) -Preset $(PRESET) -Configuration $(CONFIGURATION) -Install -Prefix $(PREFIX)
+else
+	cmake --install $(BUILD_DIR) --prefix $(PREFIX)
+	@echo "Installed to $(PREFIX)/bin and $(PREFIX)/share/blackholegl"
+endif
 
 uninstall:
-	rm -f $(BINDIR)/$(TARGET)
-	rm -rf $(SHAREDIR)
-	@echo "Uninstalled from $(BINDIR) and $(SHAREDIR)"
+ifeq ($(OS),Windows_NT)
+	if exist $(PREFIX) rmdir /s /q $(PREFIX)
+else
+	rm -f $(PREFIX)/bin/$(TARGET)
+	rm -rf $(PREFIX)/share/blackholegl
+	@echo "Uninstalled from $(PREFIX)"
+endif
+
+help:
+	@echo "targets: all build debug run clean install uninstall"
+	@echo "vars:    PRESET=$(PRESET) RES=$(RES) SHOW_FPS=$(SHOW_FPS) PREFIX=$(PREFIX)"

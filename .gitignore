@@ -1,1 +1,9 @@
 build/
+build-*/
+out/
+cmake-build-*/
+CMakeUserPresets.json
+.vs/
+.vscode/
+*.o
+*.obj

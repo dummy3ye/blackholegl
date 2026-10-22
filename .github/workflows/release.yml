@@ -1,0 +1,116 @@
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag to release, e.g. v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+    - id: meta
+      run: |
+        TAG="${{ github.event.inputs.tag || github.ref_name }}"
+        case "$TAG" in
+          v*) ;;
+          *) echo "::error::tag must start with v, got '$TAG'"; exit 1;;
+        esac
+        echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: linux x86_64
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBLACKHOLEGL_VERSION="${{ needs.meta.outputs.version }}"
+
+    - name: Build
+      run: cmake --build build --config Release --parallel
+
+    - name: Package
+      run: |
+        mkdir -p staging
+        cp build/blackholegl staging/
+        cp -r shaders staging/shaders
+        cp README.md staging/
+        tar -czf blackholegl-linux-x86_64.tar.gz -C staging .
+        rm -rf staging
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: blackholegl-linux-x86_64
+        path: blackholegl-linux-x86_64.tar.gz
+
+  windows:
+    name: windows x64
+    needs: meta
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBLACKHOLEGL_VERSION="${{ needs.meta.outputs.version }}"
+
+    - name: Build
+      run: cmake --build build --config Release --parallel
+
+    - name: Package
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Path staging -Force | Out-Null
+        Copy-Item build/Release/blackholegl.exe staging/
+        Copy-Item -Recurse shaders staging/shaders
+        Copy-Item README.md staging/ -ErrorAction SilentlyContinue
+        Copy-Item LICENSE staging/ -ErrorAction SilentlyContinue
+        Compress-Archive -Path staging/* -DestinationPath blackholegl-windows-x64.zip
+        Remove-Item -Recurse -Force staging
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: blackholegl-windows-x64
+        path: blackholegl-windows-x64.zip
+
+  release:
+    name: github release
+    needs: [meta, linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Checksums
+      run: sha256sum artifacts/*/*.tar.gz artifacts/*/*.zip > blackholegl-checksums.txt
+
+    - name: Publish
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ needs.meta.outputs.tag }}
+      run: |
+        gh release create "$TAG" \
+          artifacts/*/*.tar.gz \
+          artifacts/*/*.zip \
+          blackholegl-checksums.txt \
+          --title "blackholegl $TAG" \
+          --generate-notes

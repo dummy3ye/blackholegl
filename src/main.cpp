@@ -1,15 +1,33 @@
 #include "bitmap_font.h"
 #include "shader.hpp"
+
+// windows.h has to come before glfw3.h, both define APIENTRY
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#ifndef BLACKHOLEGL_VERSION
+#define BLACKHOLEGL_VERSION "0.0.0"
+#endif
 
 // global states
 int windowWidth = 1280;
@@ -119,7 +137,9 @@ static void printHelp() {
                "  esc             exit\n";
 }
 
-static void printVersion() { std::cout << "blackholegl 1.0.0\n"; }
+static void printVersion() {
+  std::cout << "blackholegl " << BLACKHOLEGL_VERSION << "\n";
+}
 
 static int parseArgs(int argc, char **argv) {
   for (int i = 1; i < argc; ++i) {
@@ -189,14 +209,42 @@ static int parseArgs(int argc, char **argv) {
 }
 
 // main
+namespace fs = std::filesystem;
+
+// directory the executable lives in, so assets can be found no matter which
+// working directory the app was started from
+static fs::path executableDir() {
+#if defined(_WIN32)
+  char buf[MAX_PATH];
+  DWORD n = GetModuleFileNameA(nullptr, buf, MAX_PATH);
+  if (n > 0 && n < MAX_PATH)
+    return fs::path(buf).parent_path();
+#elif defined(__linux__)
+  std::error_code ec;
+  fs::path exe = fs::read_symlink("/proc/self/exe", ec);
+  if (!ec)
+    return exe.parent_path();
+#endif
+  return fs::current_path();
+}
+
 static std::string shaderPath(const std::string &file) {
-  std::ifstream f("shaders/" + file);
-  if (f.good())
-    return "shaders/" + file;
-  f.open("/usr/local/share/blackholegl/shaders/" + file);
-  if (f.good())
-    return "/usr/local/share/blackholegl/shaders/" + file;
-  return "shaders/" + file;
+  static const fs::path exeDir = executableDir();
+  std::vector<fs::path> dirs;
+  if (const char *env = std::getenv("BLACKHOLEGL_SHADER_DIR"))
+    dirs.emplace_back(env);
+  dirs.push_back(exeDir / "shaders");                             // build tree
+  dirs.push_back(exeDir.parent_path() / "share" / "blackholegl" / "shaders"); // install tree
+  dirs.push_back(fs::current_path() / "shaders");                 // cwd
+  dirs.emplace_back("/usr/local/share/blackholegl/shaders");      // make install
+
+  for (const fs::path &dir : dirs) {
+    fs::path candidate = dir / file;
+    std::ifstream f(candidate);
+    if (f.good())
+      return candidate.string();
+  }
+  return (exeDir / "shaders" / file).string();
 }
 
 int main(int argc, char **argv) {
