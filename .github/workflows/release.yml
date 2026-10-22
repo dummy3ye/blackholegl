@@ -86,7 +86,7 @@ jobs:
         New-Item -ItemType Directory -Path package -Force | Out-Null
         Copy-Item staging/bin/blackholegl.exe package/
         Copy-Item -Recurse staging/share/blackholegl/shaders package/shaders
-        Copy-Item README.md LICENSE package/
+        Copy-Item README.md, LICENSE -Destination package/
         Compress-Archive -Path package/* -DestinationPath blackholegl-windows-x64.zip
         Remove-Item -Recurse -Force staging, package
 
