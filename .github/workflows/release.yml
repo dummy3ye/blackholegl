@@ -100,6 +100,9 @@ jobs:
     needs: [meta, linux, windows]
     runs-on: ubuntu-latest
     steps:
+    # gh needs a checkout to resolve the repository
+    - uses: actions/checkout@v4
+
     - uses: actions/download-artifact@v4
       with:
         path: artifacts
@@ -111,12 +114,13 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         TAG: ${{ needs.meta.outputs.tag }}
+        REPO: ${{ github.repository }}
       run: |
         FILES=(artifacts/*/*.tar.gz artifacts/*/*.zip blackholegl-checksums.txt)
-        if gh release view "$TAG" >/dev/null 2>&1; then
-          gh release upload "$TAG" "${FILES[@]}" --clobber
+        if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+          gh release upload "$TAG" "${FILES[@]}" --repo "$REPO" --clobber
         else
-          gh release create "$TAG" "${FILES[@]}" \
+          gh release create "$TAG" "${FILES[@]}" --repo "$REPO" \
             --title "blackholegl $TAG" \
             --generate-notes
         fi
