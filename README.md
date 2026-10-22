@@ -60,26 +60,25 @@ Intel/AMD; Nvidia needs the proprietary driver.
 The Makefile links `-lGL -ldl -lm`, so it targets Linux — on macOS the linker
 flags need adjusting (GLFW via Homebrew, OpenGL framework instead of `-lGL`).
 
-#### For Windows
+#### For Windows ( using wsl2 )
+
+follow the steps of `For linux`
 
 >[!IMPORTANT]
 > in wsl2 a common problem is getting the OpenGL version right, if you get into any problem run `source scripts/wsl2-mesa-version-fix.sh`
+
+#### For Windows ( without wsl, directly )
 
 The Makefile is Linux-only, so on Windows use `install.bat` from an
 **Administrator** terminal. It installs Git, CMake and the VS 2022 Build
 Tools via winget, builds GLFW 3.4 from source, then builds with CMake:
 
-```bat
+```pwsh
 git clone https://github.com/dummy3ye/blackholegl
 cd blackholegl
-install.bat
+./install.bat
 build-win\Release\blackholegl.exe
 ```
 
-Run the exe from the repo root so it finds `shaders/`.
-The GPU driver must support OpenGL 4.3 Core (compute shaders).
-
-Building inside **WSL 2** also works (WSL 1 has no GPU access) — install the same
-packages as Linux (`clang make cmake libglfw3-dev libgl1-mesa-dev pkg-config`)
-and `make run`. Check the GL version WSLg exposes with
-`glxinfo | grep "OpenGL version"` (`mesa-utils` package).
+>[!NOTE]
+> Run the exe from the repo root so it finds `shaders/`. The GPU driver must support OpenGL 4.3 Core (compute shaders).
