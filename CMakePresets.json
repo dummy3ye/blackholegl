@@ -15,7 +15,7 @@
       }
     },
     {
-      "name": "windows-msvc-release",
+      "name": "windows",
       "displayName": "Windows / MSVC / Release",
       "inherits": "base",
       "cacheVariables": {
@@ -31,7 +31,7 @@
       }
     },
     {
-      "name": "linux-release",
+      "name": "linux",
       "displayName": "Linux / Release",
       "inherits": "base",
       "cacheVariables": {
@@ -52,8 +52,8 @@
   ],
   "buildPresets": [
     {
-      "name": "windows-msvc-release",
-      "configurePreset": "windows-msvc-release",
+      "name": "windows",
+      "configurePreset": "windows",
       "configuration": "Release"
     },
     {
@@ -62,8 +62,8 @@
       "configuration": "Debug"
     },
     {
-      "name": "linux-release",
-      "configurePreset": "linux-release",
+      "name": "linux",
+      "configurePreset": "linux",
       "configuration": "Release"
     },
     {

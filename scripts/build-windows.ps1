@@ -8,14 +8,14 @@
 #
 # Parameters:
 #   -Tools                    install missing tools with winget first
-#   -Preset <name>            CMake preset to build (default windows-msvc-release)
+#   -Preset <name>            CMake preset to build (default windows)
 #   -Configuration <name>     build configuration (default Release)
 #   -Install                  install into -Prefix after building
 #   -Prefix <path>            install prefix
 
 param(
     [switch]$Tools,
-    [string]$Preset = 'windows-msvc-release',
+    [string]$Preset = 'windows',
     [string]$Configuration = 'Release',
     [switch]$Install,
     [string]$Prefix = ''

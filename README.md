@@ -32,12 +32,12 @@ git clone https://github.com/dummy3ye/blackholegl
 cd blackholegl
 
 # Linux
-cmake --preset linux-release && cmake --build --preset linux-release
-./build/linux-release/blackholegl
+cmake --preset linux && cmake --build --preset linux
+./build/linux/blackholegl
 
 # Windows
-cmake --preset windows-msvc-release && cmake --build --preset windows-msvc-release
-.\build\windows-msvc-release\Release\blackholegl.exe
+cmake --preset windows && cmake --build --preset windows
+.\build\windows\Release\blackholegl.exe
 ```
 
 GLFW is downloaded and built automatically when it is not installed on the
@@ -89,12 +89,12 @@ sudo pacman -S cmake clang glfw
 
 | preset | what it does |
 |--------|--------------|
-| `linux-release` / `linux-debug` | Linux build, debug adds address + UB sanitizers |
-| `windows-msvc-release` / `windows-msvc-debug` | Windows build with MSVC |
+| `linux` / `linux-debug` | Linux build, debug adds address + UB sanitizers |
+| `windows` / `windows-msvc-debug` | Windows build with MSVC |
 
 ```sh
-cmake --preset linux-release
-cmake --build --preset linux-release
+cmake --preset linux
+cmake --build --preset linux
 ```
 
 ### make

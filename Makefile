@@ -15,7 +15,7 @@
 TARGET := blackholegl
 
 ifeq ($(OS),Windows_NT)
-  PRESET               ?= windows-msvc-release
+  PRESET               ?= windows
   DEBUG_PRESET         ?= windows-msvc-debug
   CONFIGURATION        ?= Release
   DEBUG_CONFIGURATION  ?= Debug
@@ -24,7 +24,7 @@ ifeq ($(OS),Windows_NT)
   PREFIX    ?= dist
   PS := powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 else
-  PRESET               ?= linux-release
+  PRESET               ?= linux
   DEBUG_PRESET         ?= linux-debug
   CONFIGURATION        ?=
   DEBUG_CONFIGURATION  ?=
