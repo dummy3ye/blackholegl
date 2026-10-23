@@ -1,11 +1,15 @@
 # blackholegl
 
+![GitHub last commit](https://img.shields.io/github/last-commit/dummy3ye/blackholegl?style=for-the-badge&labelColor=101418&color=9ccbfb)
+![GitHub Repo stars](https://img.shields.io/github/stars/dummy3ye/blackholegl?style=for-the-badge&labelColor=101418&color=b9c8da)
+![GitHub repo size](https://img.shields.io/github/repo-size/dummy3ye/blackholegl?style=for-the-badge&labelColor=101418&color=d3bfe6)
+
 Blackholegl is a simulation of The Gargantua Blackhole seen in the movie intersteller written entirely in C++ and OpenGL
 
 > [!IMPORTANT]
-> This main project is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too problematic to maintain multi-platform releases for one person.
+> Thisn project's main code is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too problematic to maintain multi-platform releases for one person.
 
-![blackhole](assets/blackholegl-preview.mp4)
+https://github.com/user-attachments/assets/dc154f8b-f5fd-40ea-9eb0-5cc6d82ed8b2
 
 A huge inspiration for this project was Kavan's video about simulating a blackhole in C++, check out his video on [youtube](https://www.youtube.com/watch?v=8-B6ryuBkCM).
 
