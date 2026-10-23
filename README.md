@@ -3,7 +3,7 @@
 Blackholegl is a simulation of The Gargantua Blackhole seen in the movie intersteller written entirely in C++ and OpenGL
 
 > [!IMPORTANT]
-> This main project is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too complex to maintain multi-platform releases for one person.
+> This main project is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too problematic to maintain multi-platform releases for one person.
 
 ![v3 blackhole](assets/v3.png)
 
