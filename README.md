@@ -5,7 +5,7 @@ Blackholegl is a simulation of The Gargantua Blackhole seen in the movie interst
 > [!IMPORTANT]
 > This main project is written by human, Not LLM's. only help taken from llm is in the release pipeline because it's too problematic to maintain multi-platform releases for one person.
 
-![blackhole](assets/blackhole-preview.mp4)
+![blackhole](assets/blackholegl-preview.mp4)
 
 A huge inspiration for this project was Kavan's video about simulating a blackhole in C++, check out his video on [youtube](https://www.youtube.com/watch?v=8-B6ryuBkCM).
 
