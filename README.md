@@ -121,12 +121,12 @@ not have to be on `PATH`):
 
 ### windows
 
-`install.bat` checks for CMake and the Visual Studio build tools, and builds
+`scripts/install.bat` checks for CMake and the Visual Studio build tools, and builds
 the project:
 
 ```bat
-install.bat          :: build
-install.bat -Tools   :: install missing tools with winget first, then build
+scripts/install.bat          :: build
+scripts/install.bat -Tools   :: install missing tools with winget first, then build
 ```
 
 Both tools can also be installed by hand:

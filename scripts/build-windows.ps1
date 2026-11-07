@@ -68,7 +68,7 @@ if (-not $cmake) {
     Write-Host ""
     Write-Host "error: cmake not found"
     Write-Host "  install it with: winget install Kitware.CMake"
-    Write-Host "  then reopen the terminal and run install.bat -Tools"
+    Write-Host "  then reopen the terminal and run scripts/install.bat -Tools"
     exit 1
 }
 
@@ -76,7 +76,7 @@ if (-not $vs) {
     Write-Host ""
     Write-Host "error: no Visual Studio C++ compiler found"
     Write-Host "  install it with: winget install Microsoft.VisualStudio.2022.BuildTools"
-    Write-Host "  then reopen the terminal and run install.bat -Tools"
+    Write-Host "  then reopen the terminal and run scripts/install.bat -Tools"
     exit 1
 }
 
