@@ -22,3 +22,10 @@ InlayHints:
   Enabled: true
   ParameterNames: true
   DeducedTypes: true
+
+---
+If:
+  PathMatch: [external/.*, build/.*, include/stb_easy_font\.h]
+Diagnostics:
+  ClangTidy:
+    Remove: '*'

@@ -1,0 +1,7 @@
+# Directories and files to ignore during clang-tidy analysis
+build/.*
+external/.*
+external/glad/.*
+external/glew/.*
+patches/.*
+include/stb_easy_font\.h

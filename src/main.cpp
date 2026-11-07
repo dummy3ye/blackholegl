@@ -233,10 +233,11 @@ static std::string shaderPath(const std::string &file) {
   std::vector<fs::path> dirs;
   if (const char *env = std::getenv("BLACKHOLEGL_SHADER_DIR"))
     dirs.emplace_back(env);
-  dirs.push_back(exeDir / "shaders");                             // build tree
-  dirs.push_back(exeDir.parent_path() / "share" / "blackholegl" / "shaders"); // install tree
-  dirs.push_back(fs::current_path() / "shaders");                 // cwd
-  dirs.emplace_back("/usr/local/share/blackholegl/shaders");      // make install
+  dirs.push_back(exeDir / "shaders"); // build tree
+  dirs.push_back(exeDir.parent_path() / "share" / "blackholegl" /
+                 "shaders");                                 // install tree
+  dirs.push_back(fs::current_path() / "shaders");            // cwd
+  dirs.emplace_back("/usr/local/share/blackholegl/shaders"); // make install
 
   for (const fs::path &dir : dirs) {
     fs::path candidate = dir / file;
