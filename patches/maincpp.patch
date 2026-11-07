@@ -1,0 +1,15 @@
+diff --git a/src/main.cpp b/src/main.cpp
+index 8d8d0a3..9abefbf 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,3 +1,10 @@
++// the is the main source file blackholegl project of me dummy3ye
++// when i started this project only god and i know what was i writing,
++// but coming to this point of time. 
++// only god knows what of earth i was planning and wrote
++//
++// jockes aside, if you have any questions why i did what, ask
++
+ #include "bitmap_font.h"
+ #include "shader.hpp"
+ 
